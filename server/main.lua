@@ -26,32 +26,9 @@ function action:generateKey()
     return key
 end
 
---[[
-local function loadFunction(fileName)
-    local filePath = ("exports/%s"):format(fileName)
-    local chunk = LoadResourceFile(GetCurrentResourceName(), filePath)
-
-    if not chunk then return error(("file %s doesn't exist!"):format(filePath)) end
-
-    local fn, _ = load(chunk, ('@@%s/%s'):format(GetCurrentResourceName(), filePath))
-
-    if fn then return fn()?[fileName:sub(1, -5)] end
-
-    error("Could not load function from " .. fileName)
-end
-exports("loadFunction", loadFunction)
-]]
-
--- Defining the function to be passed
--- local function sum(x, y)
---     return x + y
--- end
-
--- Calling the write function to save the passed function to a lua file
--- do writeFunction(sum) end
-
 ----------------------------------------------------------------------------------------------------------------------------
 
+-- Solely for testing
 local meta = {
     __index = function(_, index)
         return index == "sayMyName" and "Mahan"

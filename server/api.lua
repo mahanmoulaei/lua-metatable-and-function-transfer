@@ -93,7 +93,7 @@ function api.writeMetatable(metatable)
     for key, value in pairs(metatable) do
         if type(value) == "function" then
             local fileName = api.writeFunction(value)
-            serializedTable = serializedTable .. internalApi.string.format("local __metamethod_%s = LoadResourceFile(\"x-test\", \"%s\")\n", key, ("exports/%s"):format(fileName))
+            serializedTable = serializedTable .. internalApi.string.format("local __metamethod_%s = \"%s\"\n", key, fileName)
         end
     end
 
@@ -111,6 +111,19 @@ function api.writeMetatable(metatable)
     internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFileName), serializedTable, -1)
 
     return fullFileName
+end
+
+function api.loadFunction(fileName)
+    local filePath = ("exports/%s"):format(fileName)
+    local chunk = internalApi.loadResourceFile(internalApi.handlerResource, filePath)
+
+    if not chunk then return error(("file %s doesn't exist!"):format(filePath)) end
+
+    local fn, _ = load(chunk, ("@@%s/%s"):format(internalApi.handlerResource, filePath))
+
+    if fn then return fn()?[fileName:sub(1, -5)] end
+
+    error("Could not load function from " .. fileName)
 end
 
 ---Loads the metatable from the specified file
@@ -133,21 +146,10 @@ function api.loadMetatable(fileName)
             if key:find("__") then
                 local _type = type(value)
 
-                if _type == "string" then
-                    local _fn, _err = load(value)
-
-                    if _fn and not _err then
-                        local mt = _fn()
-                        local _, func = next(mt)
-                        metatable[key] = func
-                    end
+                if _type == "string" and value:sub(-4) == ".lua" then
+                    metatable[key] = api.loadFunction(value)
                 elseif _type == "function" then
                     metatable[key] = value
-                elseif _type == "table" then
-                    local mt = getmetatable(value)
-                    mt.__index = nil
-                    mt.__newindex = nil
-                    metatable[key] = setmetatable(value, mt)
                 end
 
                 if not metatable[key] then
