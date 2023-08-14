@@ -70,16 +70,16 @@ function api.writeFunction(func)
     local key = internalApi.exportsMetadata:generateKey()
 
     local fileName = ("func_%s"):format(key)
-    local fullFilename = ("%s.lua"):format(fileName)
+    local fullFileName = ("%s.lua"):format(fileName)
     local outputFileContents = internalApi.string.format([[
 return {
     ["%s"] = %s
 }
     ]], fileName, desiredFunctionContent)
 
-    internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFilename), outputFileContents, -1)
+    internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFileName), outputFileContents, -1)
 
-    return fullFilename
+    return fullFileName
 end
 
 ---Writes the passed metatable's metamethods into a file for usage in external resources
@@ -106,11 +106,11 @@ function api.writeMetatable(metatable)
     local key = internalApi.exportsMetadata:generateKey()
 
     local fileName = ("meta_%s"):format(key)
-    local fullFilename = ("%s.lua"):format(fileName)
+    local fullFileName = ("%s.lua"):format(fileName)
 
-    internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFilename), serializedTable, -1)
+    internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFileName), serializedTable, -1)
 
-    return fullFilename
+    return fullFileName
 end
 
 ---Loads the metatable from the specified file

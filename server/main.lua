@@ -54,7 +54,6 @@ exports("loadFunction", loadFunction)
 
 local meta = {
     __index = function(_, index)
-        print("__index", index, value)
         return index == "sayMyName" and "Mahan"
     end,
     __newindex = function(self, index, value)
