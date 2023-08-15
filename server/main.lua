@@ -25,31 +25,3 @@ function action:generateKey()
 
     return key
 end
-
-----------------------------------------------------------------------------------------------------------------------------
-
--- Solely for testing
-local meta = {
-    __index = function(_, index)
-        return index == "sayMyName" and "Mahan"
-    end,
-    __newindex = function(self, index, value)
-        print(("__newindex on (%s %s=%s) is triggered but won't affect anything"):format(self, index, value))
-        return
-    end,
-}
-
-CreateThread(function()
-    local api = lib.require("server.api")
-
-    local obj = setmetatable({}, meta)
-    local fileName = api.writeMetatable(getmetatable(obj))
-
-    local meta2 = api.loadMetatable(fileName)
-    local obj2 = setmetatable({}, meta2)
-
-    print(obj.sayMyName)  -- prints Mahan
-    print(obj2.sayMyName) -- prints Mahan
-
-    obj2.kaftar = "25M"   -- prints the meta.__newindex's content
-end)
