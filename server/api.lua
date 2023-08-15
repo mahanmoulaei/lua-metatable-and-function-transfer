@@ -82,6 +82,22 @@ return {
     return fullFileName
 end
 
+---Loads the function from the specified file
+---@param fileName string
+---@return function?
+function api.loadFunction(fileName)
+    local filePath = ("exports/%s"):format(fileName)
+    local chunk = internalApi.loadResourceFile(internalApi.handlerResource, filePath)
+
+    if not chunk then return error(("file %s doesn't exist!"):format(filePath)) end
+
+    local fn, _ = load(chunk, ("@@%s/%s"):format(internalApi.handlerResource, filePath))
+
+    if fn then return fn()?[fileName:sub(1, -5)] end
+
+    error("Could not load function from " .. fileName)
+end
+
 ---Writes the passed metatable's metamethods into a file for usage in external resources
 ---@param metatable table
 ---@return string?
@@ -111,19 +127,6 @@ function api.writeMetatable(metatable)
     internalApi.saveResourceFile(internalApi.handlerResource, ("exports/%s"):format(fullFileName), serializedTable, -1)
 
     return fullFileName
-end
-
-function api.loadFunction(fileName)
-    local filePath = ("exports/%s"):format(fileName)
-    local chunk = internalApi.loadResourceFile(internalApi.handlerResource, filePath)
-
-    if not chunk then return error(("file %s doesn't exist!"):format(filePath)) end
-
-    local fn, _ = load(chunk, ("@@%s/%s"):format(internalApi.handlerResource, filePath))
-
-    if fn then return fn()?[fileName:sub(1, -5)] end
-
-    error("Could not load function from " .. fileName)
 end
 
 ---Loads the metatable from the specified file
