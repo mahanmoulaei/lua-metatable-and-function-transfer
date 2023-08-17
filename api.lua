@@ -165,4 +165,73 @@ function api.loadMetatable(fileName)
     return metatable
 end
 
+local function modifyMt(mt)
+    -- WORKING
+    -- rawset(mt, "__index", function(t, k, ...)
+    --     local funcRef = rawget(t, "__cfx_functionReference") and rawget(getmetatable(t), "__call")
+
+    --     print("funcRef", funcRef)
+    --     if funcRef then
+    --         return t(mt, k, ...)
+    --     end
+
+    --     return error('Cannot index a funcref shakilaa', 2)
+    -- end)
+
+    local og_gc = rawget(mt, "__gc")
+    local og_call = rawget(mt, "__call")
+    local og_pack = rawget(mt, "__pack")
+    local og_unpack = rawget(mt, "__unpack")
+
+    for metaKey, metaValue in pairs(mt) do
+        local _type = type(metaValue)
+        -- print(metaKey, metaValue, _type)
+
+        local funcRef
+
+
+        --[[if _type == "table" and rawget(metaValue, "__cfx_functionReference") then
+            funcRef = function(self, ...)
+                return rawget(self, "__cfx_functionReference") and rawget(getmetatable(self), "__call")(self, ...)
+            end
+        else]]
+        if _type == "function" then
+            funcRef = true
+        end
+
+        if funcRef then
+            rawset(mt, metaKey, function(self, ...)
+                self(metaValue, ...)
+            end)
+        end
+    end
+
+    rawset(mt, "__gc", og_gc)
+    rawset(mt, "__call", og_call)
+    rawset(mt, "__pack", og_pack)
+    rawset(mt, "__unpack", function(...)
+        local tbl = og_unpack(...)
+        -- rawset(tbl, "__obj_metatable", mt)
+        return setmetatable(tbl, mt)
+    end)
+
+
+    return mt
+end
+
+local EXT_FUNCREF = 10
+local EXT_LOCALFUNCREF = 11
+
+local EXT_FUNCREF_MT = msgpack.extend_get(EXT_FUNCREF)
+local EXT_LOCALFUNCREF_MT = msgpack.extend_get(EXT_LOCALFUNCREF)
+
+---@diagnostic disable-next-line: param-type-mismatch
+-- msgpack.extend_clear(EXT_FUNCREF, EXT_LOCALFUNCREF)
+
+EXT_FUNCREF_MT = modifyMt(EXT_FUNCREF_MT)
+EXT_LOCALFUNCREF_MT = modifyMt(EXT_LOCALFUNCREF_MT)
+
+msgpack.extend(EXT_FUNCREF_MT)
+msgpack.extend(EXT_LOCALFUNCREF_MT)
+
 return api

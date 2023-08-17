@@ -4,5 +4,8 @@ lua54 "yes"
 game "gta5"
 
 server_scripts {
+    "api.lua",
     "server/*.lua"
 }
+
+shared_script "@es_extended/imports.lua"
