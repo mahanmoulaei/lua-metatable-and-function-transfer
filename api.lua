@@ -167,16 +167,17 @@ end
 
 local function modifyMt(mt)
     -- WORKING
-    -- rawset(mt, "__index", function(t, k, ...)
-    --     local funcRef = rawget(t, "__cfx_functionReference") and rawget(getmetatable(t), "__call")
+    rawset(mt, "__index", function(t, k, ...)
+        print("HEREEEEE", t)
+        local funcRef = rawget(t, "__cfx_functionReference") and rawget(getmetatable(t), "__call")
 
-    --     print("funcRef", funcRef)
-    --     if funcRef then
-    --         return t(mt, k, ...)
-    --     end
+        print("funcRef", funcRef)
+        if funcRef then
+            return t(mt, k, ...)
+        end
 
-    --     return error('Cannot index a funcref shakilaa', 2)
-    -- end)
+        return error('Cannot index a funcref shakilaa', 2)
+    end)
 
     local og_gc = rawget(mt, "__gc")
     local og_call = rawget(mt, "__call")
@@ -189,30 +190,48 @@ local function modifyMt(mt)
 
         local funcRef
 
-
-        --[[if _type == "table" and rawget(metaValue, "__cfx_functionReference") then
-            funcRef = function(self, ...)
-                return rawget(self, "__cfx_functionReference") and rawget(getmetatable(self), "__call")(self, ...)
-            end
-        else]]
-        if _type == "function" then
-            funcRef = true
+        if _type == "function" or _type == "table" then
+            funcRef = metaValue
         end
 
         if funcRef then
+            -- rawset(mt, metaKey, function(self, ...)
+            --     print(_type, type(self))
+            --     if type(self) == "table" and rawget(self, "__cfx_functionReference") then
+            --         return og_call(self, ...)
+            --     end
+
+            --     return self(...)
+            --     -- self(metaValue, ...)
+            -- end)
             rawset(mt, metaKey, function(self, ...)
-                self(metaValue, ...)
+                local success, result = getmetatable(self).__call(self, ...)
+
+                if success then
+                    return result
+                end
+
+                return funcRef(self, ...)
             end)
         end
     end
 
     rawset(mt, "__gc", og_gc)
     rawset(mt, "__call", og_call)
-    rawset(mt, "__pack", og_pack)
+    rawset(mt, "__pack", function(self, tag)
+        local refStr
+        local _type = type(self)
+
+        if _type == "function" then
+            refStr = Citizen.GetFunctionReference(self)
+        elseif _type == "table" then
+            refStr = rawget(self, "__cfx_functionReference")
+        end
+
+        return refStr or error(("funcref %d type(%s) is invalid"):format(tag, _type, 2))
+    end)
     rawset(mt, "__unpack", function(...)
-        local tbl = og_unpack(...)
-        -- rawset(tbl, "__obj_metatable", mt)
-        return setmetatable(tbl, mt)
+        return setmetatable(og_unpack(...), mt)
     end)
 
 
@@ -226,7 +245,7 @@ local EXT_FUNCREF_MT = msgpack.extend_get(EXT_FUNCREF)
 local EXT_LOCALFUNCREF_MT = msgpack.extend_get(EXT_LOCALFUNCREF)
 
 ---@diagnostic disable-next-line: param-type-mismatch
--- msgpack.extend_clear(EXT_FUNCREF, EXT_LOCALFUNCREF)
+msgpack.extend_clear(EXT_FUNCREF, EXT_LOCALFUNCREF)
 
 EXT_FUNCREF_MT = modifyMt(EXT_FUNCREF_MT)
 EXT_LOCALFUNCREF_MT = modifyMt(EXT_LOCALFUNCREF_MT)
